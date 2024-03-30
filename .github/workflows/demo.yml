@@ -6,9 +6,24 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    outputs:
+      cache: ${{steps.npm-cache-dir.outputs.dir}}
     steps:
       - name: Get code
         uses: actions/checkout@v4
+      - name: Get npm cache directory
+        id: npm-cache-dir
+        shell: bash
+        run: echo "dir=$(npm config get cache)" >> ${GITHUB_OUTPUT}
+      - name: Caching the dependencies
+        uses: actions/cache@v3
+        id: npm-cache # use this to check for `cache-hit` ==> if: steps.npm-cache.outputs.cache-hit != 'true'
+        with:
+          path: ${{ steps.npm-cache-dir.outputs.dir }}
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-value
+
       - name: Setup nodejs
         uses: actions/setup-node@v4
         with:
@@ -27,6 +42,14 @@ jobs:
     steps:
       - name: Get code
         uses: actions/checkout@v4
+      - name: Caching the dependencies
+        uses: actions/cache@v3
+        id: npm-cache # use this to check for `cache-hit` ==> if: steps.npm-cache.outputs.cache-hit != 'true'
+        with:
+          path: ${{ needs.test.outputs.cache }}
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-value
       - name: Setup nodejs
         uses: actions/setup-node@v4
         with:
